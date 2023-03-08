@@ -1,0 +1,9 @@
+{
+    "editor.tabSize": 2,
+    "files.exclude": {
+        "**/*.exe": true,
+        "**/*.o": true,
+        "**/*.ppu": true
+    },
+    "editor.mouseWheelZoom": true
+}
