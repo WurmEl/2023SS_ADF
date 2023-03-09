@@ -1,22 +1,19 @@
-(* Hashing Chaining Program:                          Wurm Elias, 2023-03-09 *)
+(* Hashing Probing Program:                           Wurm Elias, 2023-03-09 *)
 (* ------                                                                    *)
-(* Uses Chaining to Hash data                                                *)
+(* Uses Probing to Hash data                                                 *)
 (* ========================================================================= *)
 
-program ChainingPrg;
+program ProbingPrg;
 const
   maxSize = 100;
 
-type
-  EntryPtr = ^EntryRecord;
+type 
+  EntryPtr = ^EntryRecord; 
   EntryRecord = record
     data: STRING;
-    next: EntryPtr;
+    deleted: BOOLEAN;
   end;
   HashTable = array[0..maxSize -1] of EntryPtr;
-
-var
-  ht: HashTable;
 
 procedure InitHashTable(var hashTable: HashTable);
 var
@@ -30,34 +27,59 @@ begin
   if(Length(data) = 0) then GetHashCode := 0 else if (Length(data) = 1) then GetHashCode := (Ord(data[1]) * 7 + 1) * 17 else GetHashCode := (Ord(data[1]) * 7 + Ord(data[2]) + Length(data)) * 17;
 end;
 
-function NewEntry(data: STRING; next: EntryPtr): EntryPtr;
+function NewEntry(data: STRING): EntryPtr;
 var
   e: EntryPtr;
 begin
   New(e);
   e^.data := data;
-  e^.next := next;
+  e^.deleted := false;
   NewEntry := e;
 end;
 
 procedure Insert(var hashTable: HashTable; data: STRING);
 var
-  hashCode: INTEGER;
+  hashCode, offset, i: INTEGER;
 begin
   hashCode := GetHashCode(data) mod maxSize;
-  hashTable[hashCode] := NewEntry(data, hashTable[hashCode]);
+  offset := 0;
+  (* quadratic probing with offset² with offset only its linear probing *)
+  i := hashCode + (offset * offset) mod maxSize;
+    
+  while ((hashTable[i] <> nil) and not hashTable[i]^.deleted) do
+  begin
+    offset := offset + 1;
+    i := hashCode + (offset * offset) mod maxSize;
+
+    if(offset > maxSize) then
+    begin
+      WriteLn('HashTable is full!');
+      Halt;
+    end;
+  end;
+
+  if(hashTable[i] = NIL) then hashTable[i] := NewEntry(data) else begin
+    hashTable[i]^.data := data;
+    hashTable[i]^.deleted := false;
+  end;
 end;
 
 function Contains(hashTable: HashTable; data: STRING): BOOLEAN;
 var
-  hashCode: INTEGER;
-  e: EntryPtr;
+  hashCode, offset, i: INTEGER;
 begin
   hashCode := GetHashCode(data) mod maxSize;
-  e := hashTable[hashCode];
-  while ((e <> nil) and (e^.data <> data)) do e := e^.next;
+  offset := 0;
+  i := hashCode + (offset * offset) mod maxSize;
+  while ((hashTable[i] <> nil) 
+      and ((hashTable[i]^.data <> data) or hashTable[i]^.deleted) 
+      and (offset <= maxSize)) do
+  begin
+    offset := offset + 1;
+    i := hashCode + (offset * offset) mod maxSize;
+  end;
 
-  Contains := e <> NIL;
+  Contains := (hashTable[i] <> NIL) and (offset <= maxSize);
 end;
 
 procedure ClearHashTable(var hashTable: HashTable);
@@ -69,19 +91,21 @@ begin
   begin
     e := hashTable[i];
     while (e <> nil) do
-    begin
-      hashTable[i] := e^.next;
+    begin 
       Dispose(e);
-      e := hashTable[i];
+      hashTable[i] := nil;
     end;
   end;
 end;
-  
+
+var
+  ht: HashTable;
+
 begin
   InitHashTable(ht);
   Insert(ht, 'Stefan');
   Insert(ht, 'Test');
-  Insert(ht, 'ASDAS');
+  Insert(ht, 'ASDAS'); 
   Insert(ht, 'df32');
 
   WriteLn('Contains(Stefan): ', Contains(ht, 'Stefan'));
