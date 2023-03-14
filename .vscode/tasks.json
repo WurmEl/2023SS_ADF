@@ -8,6 +8,7 @@
       "type": "process",
       "command": "fpc",
       "args": [
+        "-dUNICODE",
         "-Mtp",
         "-Criot",
         "-gl",
