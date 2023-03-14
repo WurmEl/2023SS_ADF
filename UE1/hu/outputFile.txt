@@ -1,0 +1,119 @@
+a 2, 2, 5, 5, 5, 5, 9, 9
+accompanied 11
+also 11
+an 2
+and 2, 2, 11, 11, 11
+are 11
+as 5
+at 5
+bc 9
+be 5
+been 2, 5, 9
+belief 9
+below 11
+bonorum 11
+book 2
+by 5
+chunk 11
+cicero 11
+classical 9
+co 5
+college 9
+come 8
+content 5
+contrary 9
+de 11
+distracted 5
+distribution 5
+do 4
+does 8
+dummy 2
+english 11
+established 5
+et 11
+ever 2
+exact 11
+fact 5
+finibus 11
+for 11
+form 11
+from 8
+galley 2
+hampden 9
+has 2
+here 5
+in 9
+industry 2
+interested 11
+ipsum 1, 5, 9, 9, 11
+is 1, 2, 2, 2, 5, 5, 5, 9, 9, 11, 11
+it 2
+its 5
+latin 9
+layout 5
+less 5
+letters 5
+literature 9
+long 5
+looked 9
+looking 5
+lorem 1, 2, 2, 2, 2, 5, 5, 9, 9, 9, 11, 11, 11
+make 2
+making 9
+malorum 11
+mcclintock 9
+more 5
+normal 5
+not 9
+of 2, 2, 5, 5, 5, 9, 11
+old 9
+one 9
+opposed 5
+or 5
+original 11
+over 9
+page 5
+piece 9
+point 5
+popular 9
+printer 2
+printing 2, 5
+professor 9
+random 9
+readable 5
+reader 5
+reproduced 11
+richard 9
+roots 9
+s 2
+scrambled 2
+sections 11
+simply 2, 2, 2, 9, 11, 11
+since 2
+specimen 2
+standard 2
+su 2
+sydney 9
+text 2
+that 5
+the 2, 2, 2, 2, 5, 5, 11, 11, 11
+their 11
+those 11
+to 2
+took 2
+type 2
+typesetting 2
+unknown 2
+up 9
+use 4
+used 11
+using 5
+versions 11
+virginia 9
+we 4
+what 1, 2, 2, 4, 5, 5, 5, 5, 8, 9, 9, 9, 9
+when 2
+where 8
+why 4
+will 5
+years 9

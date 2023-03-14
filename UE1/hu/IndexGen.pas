@@ -1,27 +1,26 @@
-(* IndexGen:                                     HDO, 2002-02-28 *)
+(* IndexGen:                              Wurm Elias, 2023-03-14 *)
 (* --------                                                      *)
-(* Generation of a sorted index of all words in a text file.     *)
-(* Command line:                                                 *)
-(*    IndexGen [ textFileName ]                                  *)
+(* Generation of a sorted index of all words in a text file      *)
+(* with Hashtables.                                              *)
 (* ============================================================= *)
 PROGRAM IndexGen;
   USES
-    Timer, sysutils;
+    Timer, Sysutils;
 
   CONST
     ef = Chr(0);       (* end of file character *)
     maxWordLen = 30;   (* max. number of characters per word *)
-    chars = ['a' .. 'z', 'ï¿½', 'ï¿½', 'ï¿½', 'ï¿½',
-             'A' .. 'Z', 'ï¿½', 'ï¿½', 'ï¿½'];   
-    maxSize = 10000;
+    chars = ['a' .. 'z', 'ä', 'ö', 'ü', 'ß',
+             'A' .. 'Z', 'Ä', 'Ö', 'Ü']; 
+    maxSize = 32767;
 
   TYPE
     Word = STRING[maxWordLen];
-    EntryPtr = ^EntryRecord;
+    EntryPtr = ^EntryRecord; 
     EntryRecord = record
-      w: STRING;
-      lnr: STRING;
-      next: EntryPtr;
+      word: Word;
+      lnr: STRING; 
+      deleted: BOOLEAN;
     end;
     HashTable = array[0..maxSize -1] of EntryPtr;
 
@@ -37,13 +36,10 @@ PROGRAM IndexGen;
   var
     i: INTEGER;
   begin
-    for i := Low(hashTable) to High(hashTable) do 
-    begin 
-      hashTable[i] := NIL;
-    end;
+    for i := Low(hashTable) to High(hashTable) do hashTable[i] := NIL;
   end;
 
-  function GetHashCode(w: STRING): INTEGER;
+  function GetHashCode(w: Word): INTEGER;
   var
     i, r: Integer;
   begin
@@ -53,29 +49,63 @@ PROGRAM IndexGen;
     GetHashCode := r;
   end;
 
-  procedure InsertWord(var hashTable: HashTable; w: STRING; lnr: STRING);
+  function NewEntry(word: Word; lnr: STRING): EntryPtr;
   var
-    hashCode, i: INTEGER;
-    e, enew: EntryPtr;
+    e: EntryPtr;
   begin
-    hashCode := GetHashCode(w);
-    e := hashTable[hashCode];
+    New(e);
+    e^.word := word;
+    e^.lnr := lnr;
+    e^.deleted := false;
+    NewEntry := e;
+  end;
 
-    if (e <> nil) then begin
-      New(e);
-      e^.w := w;
-      e^.lnr := lnr;
-      hashTable[hashCode] := e;
+  function Contains(hashTable: HashTable; word: Word): BOOLEAN;
+  var
+    hashCode, offset, i: INTEGER;
+  begin
+    hashCode := GetHashCode(word) mod maxSize;
+    offset := 0;
+    i := hashCode + (offset * offset) mod maxSize;
+    while ((hashTable[i] <> nil) 
+        and ((hashTable[i]^.word <> word) or hashTable[i]^.deleted) 
+        and (offset <= maxSize)) do
+    begin
+      offset := offset + 1;
+      i := hashCode + (offset * offset) mod maxSize;
+    end;
+
+    Contains := (hashTable[i] <> NIL) and (offset <= maxSize);
+  end;
+
+  procedure Insert(var hashTable: HashTable; word: Word; lnr: STRING);
+  var
+    hashCode, offset, i: INTEGER;
+  begin
+    hashCode := GetHashCode(word) mod maxSize;
+    offset := 0;
+    i := hashCode + (offset * offset) mod maxSize;
+
+    if(Contains(hashTable, word)) then 
+    begin
+      hashTable[i]^.lnr := Concat(hashTable[i]^.lnr,', ', lnr);
     end else begin
-      while ((e <> nil) or (e^.w = w)) do e := e^.next;
-      if (e = nil) then begin
-        New(enew);
-        enew^.w := w;
-        enew^.lnr := lnr;
-        enew^.next := e;
-        hashTable[hashCode] := enew;
-      end else begin
-        e^.lnr := Concat(e^.lnr, ', ', lnr);
+      while ((hashTable[i] <> nil) and not hashTable[i]^.deleted) do
+      begin
+        offset := offset + 1;
+        i := hashCode + (offset * offset) mod maxSize;
+
+        if(offset > maxSize) then
+        begin
+          WriteLn('HashTable is full!');
+          Halt;
+        end;
+      end;
+
+      if(hashTable[i] = NIL) then hashTable[i] := NewEntry(word, lnr) else begin
+        hashTable[i]^.word := word;
+        hashTable[i]^.lnr := lnr;
+        hashTable[i]^.deleted := false;
       end;
     end;
   end;
@@ -89,10 +119,9 @@ PROGRAM IndexGen;
     begin
       e := hashTable[i];
       while (e <> nil) do
-      begin
-        hashTable[i] := e^.next;
+      begin 
         Dispose(e);
-        e := hashTable[i];
+        hashTable[i] := nil;
       end;
     end;
   end;
@@ -101,10 +130,10 @@ PROGRAM IndexGen;
   BEGIN (* LowerCase *)
     CASE ch OF
       'A'..'Z': LowerCase := Chr(Ord(ch) + (Ord('a') - Ord('A')));
-      'ï¿½', 'ï¿½': LowerCase := 'ae';
-      'ï¿½', 'ï¿½': LowerCase := 'oe';
-      'ï¿½', 'ï¿½': LowerCase := 'ue';
-      'ï¿½':      LowerCase := 'ss';
+      'Ä', 'ä': LowerCase := 'ae';
+      'Ö', 'ö': LowerCase := 'oe';
+      'Ü', 'ü': LowerCase := 'ue';
+      'ß':      LowerCase := 'ss';
       ELSE (* all the others *)
                 LowerCase := ch;
       END; (* CASE *)
@@ -146,6 +175,47 @@ PROGRAM IndexGen;
   END; (* GetNextWord *)
 
 
+  PROCEDURE HashTableToSortedArray(table: HashTable);
+  VAR
+    entries: array of EntryPtr;
+    dummy: EntryPtr;
+    i, j, n: Integer;
+    sorted: Boolean;
+    outputFile: TextFile;
+  BEGIN
+    Assign(outputFile, 'outputFile.txt');
+    Rewrite(outputFile);
+
+    SetLength(entries, maxSize);
+    n := 0;
+    for i := 0 to High(table) do BEGIN
+      if (table[i] <> nil) and (not table[i]^.deleted) then BEGIN
+        entries[n] := table[i];
+        Inc(n);
+      END;
+    END;
+    SetLength(entries, n);
+
+    repeat
+      sorted := True;
+      for i := 0 to n-2 do BEGIN
+        if entries[i]^.word > entries[i+1]^.word then BEGIN
+          dummy := entries[i];
+          entries[i] := entries[i+1];
+          entries[i+1] := dummy;
+          sorted := False;
+        end;
+      end;
+      Dec(n);
+    until sorted;
+
+    for i := 0 to High(entries) do BEGIN
+      writeln(outputFile, Concat(entries[i]^.word, ' ', entries[i]^.lnr));
+    END;
+
+    Close(outputFile);
+  END;
+
   VAR
     txtName: STRING;
     w: Word;        (* current word *)
@@ -159,7 +229,7 @@ BEGIN (* IndexGen *)
 
   IF ParamCount = 0 THEN BEGIN
     WriteLn;
-    WriteLn;
+    WriteLn; 
     Write('name of text file > ');
     ReadLn(txtName);
   END ELSE BEGIN
@@ -176,22 +246,22 @@ BEGIN (* IndexGen *)
   curColNr := 1; (* curColNr > Length(curLine) forces reading of first line *)
   GetNextChar;   (* curCh now holds first character *)
 
-  StartTimer;
+  // StartTimer;
   GetNextWord(w, lnr);
   n := 0;
   WHILE Length(w) > 0 DO BEGIN
-    WriteLn(w, ' ', lnr);
-    InsertWord(ht, w, IntToStr(lnr));
+    Insert(ht, w, IntToStr(lnr));
     n := n + 1;
     GetNextWord(w, lnr);
   END; (* WHILE *)
-  StopTimer;
+  // StopTimer;
 
-  WriteLn;
-  WriteLn('number of words: ', n);
-  WriteLn('elapsed time:    ', ElapsedTime);
+  // WriteLn;
+  // WriteLn('number of words: ', n);
+  // WriteLn('elapsed time:    ', ElapsedTime);
+
+  HashTableToSortedArray(ht);
+
   Close(txt);
-  
-  ReadLn;
-  
+  ClearHashTable(ht);
 END. (* IndexGen *)

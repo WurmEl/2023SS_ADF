@@ -1,89 +1,121 @@
-  CONST
-    maxSize = 10000;
+program test;
+const
+  maxSize = 100;
+  maxWordLen = 30;
 
-  TYPE
-    EntryPtr = ^EntryRecord;
-    EntryRecord = record
-      w: STRING;
-      lnr: STRING;
-      next: EntryPtr;
-    end;
-    HashTable = array[0..maxSize -1] of EntryPtr;
-
-  VAR
-    ht: HashTable;       (* hashtable where words get saved *)
-
-  procedure InitHashTable(var hashTable: HashTable);
-  var
-    i: INTEGER;
-  begin
-    for i := Low(hashTable) to High(hashTable) do 
-    begin 
-      hashTable[i] := NIL;
-    end;
+type
+  Word = STRING[maxWordLen];
+  EntryPtr = ^EntryRecord; 
+  EntryRecord = record
+    word: Word;
+    lnr: STRING;
+    deleted: BOOLEAN;
   end;
+  HashTable = array[0..maxSize -1] of EntryPtr;
 
-  function GetHashCode(w: STRING): INTEGER;
-  var
-    i, r: Integer;
-  begin
-    r := Length(w) * 31;
-    for i := 1 to Length(w) do
-      r := (r shr 31) xor Ord(w[i]) mod maxSize;
-    GetHashCode := r;
-  end;
-
-  procedure InsertWord(var hashTable: HashTable; w: STRING; lnr: STRING);
-  var
-    hashCode: INTEGER;
-    e, enew: EntryPtr;
-  begin
-    hashCode := GetHashCode(w);
-    e := hashTable[hashCode];
-
-    if (e <> nil) then begin
-      New(e);
-      e^.w := w;
-      e^.lnr := lnr;
-      hashTable[hashCode] := e;
-    end else begin
-      while ((e <> nil) or (e^.w = w)) do e := e^.next;
-      if (e = nil) then begin
-        New(enew);
-        enew^.w := w;
-        enew^.lnr := lnr;
-        enew^.next := e;
-        hashTable[hashCode] := enew;
-      end else begin
-        e^.lnr := Concat(e^.lnr, ', ', lnr);
-      end;
-    end;
-  end;
-
-  procedure ClearHashTable(var hashTable: HashTable);
-  var
-    i: INTEGER;
-    e: EntryPtr;
-  begin
-    for i := Low(hashTable) to High(hashTable) do
-    begin
-      e := hashTable[i];
-      while (e <> nil) do
-      begin
-        hashTable[i] := e^.next;
-        Dispose(e);
-        e := hashTable[i];
-      end;
-    end;
-  end;
-
+procedure InitHashTable(var hashTable: HashTable);
 var
-  i: Integer;
+  i: INTEGER;
+begin
+  for i := Low(hashTable) to High(hashTable) do hashTable[i] := NIL;
+end;
+
+function GetHashCode(w: Word): INTEGER;
+var
+  i, r: Integer;
+begin
+  r := Length(w) * 31;
+  for i := 1 to Length(w) do
+    r := (r shr 31) xor Ord(w[i]) mod maxSize;
+  GetHashCode := r;
+end;
+
+function NewEntry(word: Word; lnr: STRING): EntryPtr;
+var
+  e: EntryPtr;
+begin
+  New(e);
+  e^.word := word;
+  e^.lnr := lnr;
+  e^.deleted := false;
+  NewEntry := e;
+end;
+
+function Contains(hashTable: HashTable; word: Word): BOOLEAN;
+var
+  hashCode, offset, i: INTEGER;
+begin
+  hashCode := GetHashCode(word) mod maxSize;
+  offset := 0;
+  i := hashCode + (offset * offset) mod maxSize;
+  while ((hashTable[i] <> nil) 
+      and ((hashTable[i]^.word <> word) or hashTable[i]^.deleted) 
+      and (offset <= maxSize)) do
+  begin
+    offset := offset + 1;
+    i := hashCode + (offset * offset) mod maxSize;
+  end;
+
+  Contains := (hashTable[i] <> NIL) and (offset <= maxSize);
+end;
+
+procedure Insert(var hashTable: HashTable; word: Word; lnr: STRING);
+var
+  hashCode, offset, i: INTEGER;
+begin
+  hashCode := GetHashCode(word) mod maxSize;
+  offset := 0;
+  i := hashCode + (offset * offset) mod maxSize;
+
+  if(Contains(hashTable, word)) then 
+  begin
+    hashTable[i]^.lnr := Concat(hashTable[i]^.lnr,', ', lnr);
+    writeln(hashTable[i]^.word);
+    writeln(hashTable[i]^.lnr);
+  end else begin
+    while ((hashTable[i] <> nil) and not hashTable[i]^.deleted) do
+    begin
+      offset := offset + 1;
+      i := hashCode + (offset * offset) mod maxSize;
+
+      if(offset > maxSize) then
+      begin
+        WriteLn('HashTable is full!');
+        Halt;
+      end;
+    end;
+
+    if(hashTable[i] = NIL) then hashTable[i] := NewEntry(word, lnr) else begin
+      hashTable[i]^.word := word;
+      hashTable[i]^.lnr := lnr;
+      hashTable[i]^.deleted := false;
+    end;
+  end;
+end;
+
+procedure ClearHashTable(var hashTable: HashTable);
+var
+  i: INTEGER;
+  e: EntryPtr;
+begin
+  for i := Low(hashTable) to High(hashTable) do
+  begin
+    e := hashTable[i];
+    while (e <> nil) do
+    begin 
+      Dispose(e);
+      hashTable[i] := nil;
+    end;
+  end;
+end;
+
+var 
+  ht: HashTable;
 begin
   InitHashTable(ht);
-  InsertWord(ht, 'test', '1');
-
-  for i := 0 to maxSize do
-    if (ht[i] <> nil) then
-    writeln(ht[i]^.w);
+  Insert(ht, 'test', '1');
+  writeln(Contains(ht, 'test'));
+  writeln(Contains(ht, 'test1'));
+  Insert(ht, 'test', '2');
+  ClearHashTable(ht);
 end.
