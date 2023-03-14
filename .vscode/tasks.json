@@ -10,8 +10,8 @@
       "args": [
         "-Mtp",
         "-Criot",
-        // "-gl",
-        // "-gh",
+        "-gl",
+        "-gh",
         "-Fu${workspaceFolder}",
         "-Fu${workspaceFolder}/Units",
         "${file}"
@@ -21,8 +21,8 @@
         "args": [
           "-Mtp",
           "-Criot",
-          // "-gl",
-          // "-gh",
+          "-gl",
+          "-gh",
           "-Fu${workspaceFolder}",
           "-Fu${workspaceFolder}\\Units",
           "${file}"

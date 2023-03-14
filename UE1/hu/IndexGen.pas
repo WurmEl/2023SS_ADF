@@ -20,8 +20,7 @@ type
   EntryPtr = ^EntryRecord; 
   EntryRecord = record
     word: Word;
-    lnr: AnsiString; 
-    deleted: BOOLEAN;
+    lnr: AnsiString;
   end;
   HashTable = array[0..maxSize -1] of EntryPtr;
 
@@ -57,7 +56,6 @@ begin
   New(e);
   e^.word := word;
   e^.lnr := lnr;
-  e^.deleted := false;
   NewEntry := e;
 end;
 
@@ -69,7 +67,7 @@ begin
   offset := 0;
   i := hashCode + offset mod maxSize;
   while ((hashTable[i] <> nil) 
-      and ((hashTable[i]^.word <> word) or hashTable[i]^.deleted) 
+      and ((hashTable[i]^.word <> word)) 
       and (offset <= maxSize)) do
   begin
     offset := offset + 1;
@@ -89,7 +87,7 @@ begin
 
   if(Contains(hashTable, word)) then 
     hashTable[i]^.lnr := Concat(hashTable[i]^.lnr,', ', lnr) else begin
-    while ((hashTable[i] <> nil) and not hashTable[i]^.deleted) do
+    while ((hashTable[i] <> nil)) do
     begin
       offset := offset + 1;
       i := hashCode + offset mod maxSize;
@@ -101,13 +99,7 @@ begin
       end;
     end;
 
-    if(hashTable[i] = NIL) then 
-      hashTable[i] := NewEntry(word, lnr)
-    else begin
-      hashTable[i]^.word := word;
-      hashTable[i]^.lnr := lnr;
-      hashTable[i]^.deleted := false;
-    end;
+    if(hashTable[i] = NIL) then hashTable[i] := NewEntry(word, lnr);
   end;
 end;
 
@@ -186,7 +178,7 @@ begin
   SetLength(entries, maxSize);
   n := 0;
   for i := 0 to High(table) do
-    if (table[i] <> nil) and (not table[i]^.deleted) then
+    if (table[i] <> nil) then
     begin
       entries[n] := table[i];
       Inc(n);
