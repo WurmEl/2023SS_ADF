@@ -3,239 +3,232 @@
 (* Generation of a sorted index of all words in a text file      *)
 (* with Hashtables.                                              *)
 (* ============================================================= *)
-PROGRAM IndexGen;
-  USES
-    Timer, Sysutils;
+program IndexGen;
+uses
+  Timer, Sysutils;
 
-  CONST
-    ef = Chr(0);       (* end of file character *)
-    maxWordLen = 30;   (* max. number of characters per word *)
-    chars = ['a' .. 'z', 'ä', 'ö', 'ü', 'ß',
-             'A' .. 'Z', 'Ä', 'Ö', 'Ü']; 
-    maxSize = 32767;
+const 
+  ef = Chr(0);       (* end of file character *)
+  maxWordLen = 30;   (* max. number of characters per word *)
+  chars = ['a' .. 'z', 'ä', 'ö', 'ü', 'ß',
+    'A' .. 'Z', 'Ä', 'Ö', 'Ü']; 
+  maxSize = 32767;
 
-  TYPE
-    Word = STRING[maxWordLen];
-    EntryPtr = ^EntryRecord; 
-    EntryRecord = record
-      word: Word;
-      lnr: STRING; 
-      deleted: BOOLEAN;
-    end;
-    HashTable = array[0..maxSize -1] of EntryPtr;
-
-  VAR
-    txt: TEXT;           (* text file *)
-    curLine: STRING;     (* current line from file txt *)
-    curCh: CHAR;         (* current character *)
-    curLineNr: INTEGER;  (* current line number *)
-    curColNr: INTEGER;   (* current column number *)
-    ht: HashTable;       (* hashtable where words get saved *)
-
-  procedure InitHashTable(var hashTable: HashTable);
-  var
-    i: INTEGER;
-  begin
-    for i := Low(hashTable) to High(hashTable) do hashTable[i] := NIL;
+type
+  Word = STRING[maxWordLen];
+  EntryPtr = ^EntryRecord; 
+  EntryRecord = record
+    word: Word;
+    lnr: STRING; 
+    deleted: BOOLEAN;
   end;
+  HashTable = array[0..maxSize -1] of EntryPtr;
 
-  function GetHashCode(w: Word): INTEGER;
-  var
-    i, r: Integer;
-  begin
-    r := Length(w) * 31;
-    for i := 1 to Length(w) do
-      r := (r shr 31) xor Ord(w[i]) mod maxSize;
-    GetHashCode := r;
-  end;
+var
+  txt: TEXT;           (* text file *)
+  curLine: STRING;     (* current line from file txt *)
+  curCh: CHAR;         (* current character *)
+  curLineNr: INTEGER;  (* current line number *)
+  curColNr: INTEGER;   (* current column number *)
+  ht: HashTable;       (* hashtable where words get saved *)
 
-  function NewEntry(word: Word; lnr: STRING): EntryPtr;
-  var
-    e: EntryPtr;
-  begin
-    New(e);
-    e^.word := word;
-    e^.lnr := lnr;
-    e^.deleted := false;
-    NewEntry := e;
-  end;
+procedure InitHashTable(var hashTable: HashTable);
+var
+  i: INTEGER;
+begin
+  for i := Low(hashTable) to High(hashTable) do hashTable[i] := NIL;
+end;
 
-  function Contains(hashTable: HashTable; word: Word): BOOLEAN;
-  var
-    hashCode, offset, i: INTEGER;
+function GetHashCode(w: Word): INTEGER;
+var
+  i, r: Integer;
+begin
+  r := Length(w) * 31;
+  for i := 1 to Length(w) do
+    r := (r shr 31) xor Ord(w[i]) mod maxSize;
+  GetHashCode := r;
+end;
+
+function NewEntry(word: Word; lnr: STRING): EntryPtr;
+var
+  e: EntryPtr;
+begin
+  New(e);
+  e^.word := word;
+  e^.lnr := lnr;
+  e^.deleted := false;
+  NewEntry := e;
+end;
+
+function Contains(hashTable: HashTable; word: Word): BOOLEAN;
+var
+  hashCode, offset, i: INTEGER;
+begin
+  hashCode := GetHashCode(word) mod maxSize;
+  offset := 0;
+  i := hashCode + (offset * offset) mod maxSize;
+  while ((hashTable[i] <> nil) 
+      and ((hashTable[i]^.word <> word) or hashTable[i]^.deleted) 
+      and (offset < maxSize)) do
   begin
-    hashCode := GetHashCode(word) mod maxSize;
-    offset := 0;
+    offset := offset + 1;
     i := hashCode + (offset * offset) mod maxSize;
-    while ((hashTable[i] <> nil) 
-        and ((hashTable[i]^.word <> word) or hashTable[i]^.deleted) 
-        and (offset <= maxSize)) do
+  end;
+
+  Contains := (hashTable[i] <> NIL) and (offset < maxSize);
+end;
+
+procedure Insert(var hashTable: HashTable; word: Word; lnr: STRING);
+var
+  hashCode, offset, i: INTEGER;
+begin
+  hashCode := GetHashCode(word) mod maxSize;
+  offset := 0;
+  i := hashCode + (offset * offset) mod maxSize;
+
+  if(Contains(hashTable, word)) then 
+    hashTable[i]^.lnr := Concat(hashTable[i]^.lnr,', ', lnr) else begin
+    while ((hashTable[i] <> nil) and not hashTable[i]^.deleted) do
     begin
       offset := offset + 1;
       i := hashCode + (offset * offset) mod maxSize;
-    end;
 
-    Contains := (hashTable[i] <> NIL) and (offset <= maxSize);
-  end;
-
-  procedure Insert(var hashTable: HashTable; word: Word; lnr: STRING);
-  var
-    hashCode, offset, i: INTEGER;
-  begin
-    hashCode := GetHashCode(word) mod maxSize;
-    offset := 0;
-    i := hashCode + (offset * offset) mod maxSize;
-
-    if(Contains(hashTable, word)) then 
-    begin
-      hashTable[i]^.lnr := Concat(hashTable[i]^.lnr,', ', lnr);
-    end else begin
-      while ((hashTable[i] <> nil) and not hashTable[i]^.deleted) do
+      if(offset >= maxSize) then
       begin
-        offset := offset + 1;
-        i := hashCode + (offset * offset) mod maxSize;
-
-        if(offset > maxSize) then
-        begin
-          WriteLn('HashTable is full!');
-          Halt;
-        end;
-      end;
-
-      if(hashTable[i] = NIL) then hashTable[i] := NewEntry(word, lnr) else begin
-        hashTable[i]^.word := word;
-        hashTable[i]^.lnr := lnr;
-        hashTable[i]^.deleted := false;
+        WriteLn('HashTable is full!');
+        Halt;
       end;
     end;
-  end;
 
-  procedure ClearHashTable(var hashTable: HashTable);
-  var
-    i: INTEGER;
-    e: EntryPtr;
+    if(hashTable[i] = NIL) then hashTable[i] := NewEntry(word, lnr) else begin
+      hashTable[i]^.word := word;
+      hashTable[i]^.lnr := lnr;
+      hashTable[i]^.deleted := false;
+    end;
+  end;
+end;
+
+procedure ClearHashTable(var hashTable: HashTable);
+var
+  i: INTEGER;
+  e: EntryPtr;
+begin
+  for i := Low(hashTable) to High(hashTable) do
   begin
-    for i := Low(hashTable) to High(hashTable) do
-    begin
-      e := hashTable[i];
-      while (e <> nil) do
-      begin 
-        Dispose(e);
-        hashTable[i] := nil;
-      end;
+    e := hashTable[i];
+    while (e <> nil) do
+    begin 
+      Dispose(e);
+      hashTable[i] := nil;
     end;
   end;
+end;
 
-  FUNCTION LowerCase(ch: CHAR): STRING;
-  BEGIN (* LowerCase *)
-    CASE ch OF
-      'A'..'Z': LowerCase := Chr(Ord(ch) + (Ord('a') - Ord('A')));
-      'Ä', 'ä': LowerCase := 'ae';
-      'Ö', 'ö': LowerCase := 'oe';
-      'Ü', 'ü': LowerCase := 'ue';
-      'ß':      LowerCase := 'ss';
-      ELSE (* all the others *)
-                LowerCase := ch;
-      END; (* CASE *)
-  END; (* LowerCase *)
+function LowerCase(ch: CHAR): STRING;
+begin (* LowerCase *)
+  case ch of
+    'A'..'Z': LowerCase := Chr(Ord(ch) + (Ord('a') - Ord('A')));
+    'Ä', 'ä': LowerCase := 'ae';
+    'Ö', 'ö': LowerCase := 'oe';
+    'Ü', 'ü': LowerCase := 'ue';
+    'ß':      LowerCase := 'ss';
+  else (* all the others *)
+    LowerCase := ch;
+  end; (* CASE *)
+end; (* LowerCase *)
 
-  PROCEDURE GetNextChar; (* updates curChar, ... *)
-  BEGIN (* GetNextChar *)
-    IF (curColNr < Length(curLine)) THEN BEGIN
-      curColNr := curColNr + 1;
-      curCh := curLine[curColNr]
-    END ELSE BEGIN (* curColNr >= Length(curLine) *)
-      IF NOT Eof(txt) THEN BEGIN
-        ReadLn(txt, curLine);
-        curLineNr:= curLineNr + 1;
-        curColNr := 0;
-        curCh := ' '; (* separate lines by ' ' *)
-      END ELSE BEGIN (* Eof(txt) *)
-        curCh := EF;
-      END; (* IF *)
-    END; (* IF *)
-  END; (* GetNextChar *)
+procedure GetNextChar; (* updates curChar, ... *)
+begin (* GetNextChar *)
+  if (curColNr < Length(curLine)) then
+  begin
+    curColNr := curColNr + 1;
+    curCh := curLine[curColNr];
+  end else if not Eof(txt) then
+  begin
+    ReadLn(txt, curLine);
+    curLineNr:= curLineNr + 1;
+    curColNr := 0;
+    curCh := ' '; (* separate lines by ' ' *)
+  end else curCh := EF(* Eof(txt) *)(* curColNr >= Length(curLine) *)(* IF *); (* IF *)
+end; (* GetNextChar *)
 
-  PROCEDURE GetNextWord(VAR w: Word; VAR lnr: INTEGER);
-  BEGIN (* GetNextWord *)
-    WHILE (curCh <> ef) AND NOT (curCh IN chars) DO BEGIN
+procedure GetNextWord(var w: Word; var lnr: INTEGER);
+begin (* GetNextWord *)
+  while (curCh <> ef) and not (curCh in chars) do GetNextChar; (* WHILE *)
+  lnr := curLineNr;
+  if curCh <> ef then
+  begin
+    w := LowerCase(curCh);
+    GetNextChar;
+    while (curCh <> ef) and (curCh in chars) do
+    begin
+      w := Concat(w , LowerCase(curCh));
       GetNextChar;
-    END; (* WHILE *)
-    lnr := curLineNr;
-    IF curCh <> ef THEN BEGIN
-      w := LowerCase(curCh);
-      GetNextChar;
-      WHILE (curCh <> ef) AND (curCh IN chars) DO BEGIN
-        w := Concat(w , LowerCase(curCh));
-        GetNextChar;
-      END; (* WHILE *)
-    END ELSE BEGIN (* curCh = ef *)
-      w := '';
-    END; (* IF *)
-  END; (* GetNextWord *)
+    end; (* WHILE *)
+  end else w := ''(* curCh = ef *); (* IF *)
+end; (* GetNextWord *)
 
 
-  PROCEDURE HashTableToSortedArray(table: HashTable);
-  VAR
-    entries: array of EntryPtr;
-    dummy: EntryPtr;
-    i, j, n: Integer;
-    sorted: Boolean;
-    outputFile: TextFile;
-  BEGIN
-    Assign(outputFile, 'outputFile.txt');
-    Rewrite(outputFile);
+procedure HashTableToSortedArray(table: HashTable);
+var
+  entries: array of EntryPtr;
+  dummy: EntryPtr;
+  i, j, n: Integer;
+  sorted: Boolean;
+  outputFile: TextFile;
+begin
+  Assign(outputFile, 'outputFile.txt');
+  Rewrite(outputFile);
 
-    SetLength(entries, maxSize);
-    n := 0;
-    for i := 0 to High(table) do BEGIN
-      if (table[i] <> nil) and (not table[i]^.deleted) then BEGIN
-        entries[n] := table[i];
-        Inc(n);
-      END;
-    END;
-    SetLength(entries, n);
+  SetLength(entries, maxSize);
+  n := 0;
+  for i := 0 to High(table) do
+    if (table[i] <> nil) and (not table[i]^.deleted) then
+    begin
+      entries[n] := table[i];
+      Inc(n);
+    end;
+  SetLength(entries, n);
 
-    repeat
-      sorted := True;
-      for i := 0 to n-2 do BEGIN
-        if entries[i]^.word > entries[i+1]^.word then BEGIN
-          dummy := entries[i];
-          entries[i] := entries[i+1];
-          entries[i+1] := dummy;
-          sorted := False;
-        end;
+  repeat
+    sorted := True;
+    for i := 0 to n-2 do
+      if entries[i]^.word > entries[i+1]^.word then
+      begin
+        dummy := entries[i];
+        entries[i] := entries[i+1];
+        entries[i+1] := dummy;
+        sorted := False;
       end;
-      Dec(n);
-    until sorted;
+    Dec(n);
+  until sorted;
 
-    for i := 0 to High(entries) do BEGIN
-      writeln(outputFile, Concat(entries[i]^.word, ' ', entries[i]^.lnr));
-    END;
+  for i := 0 to High(entries) do writeln(outputFile, Concat(entries[i]^.word, ' ', entries[i]^.lnr));
 
-    Close(outputFile);
-  END;
+  Close(outputFile);
+end;
 
-  VAR
-    txtName: STRING;
-    w: Word;        (* current word *)
-    lnr: INTEGER;   (* line number of current word *)
-    n: LONGINT;     (* number of words *)
+var
+  txtName: STRING;
+  w: Word;        (* current word *)
+  lnr: INTEGER;   (* line number of current word *)
+  n: LONGINT;     (* number of words *)
 
-BEGIN (* IndexGen *)
+begin (* IndexGen *)
   InitHashTable(ht);
 
   Write('IndexGen: index generation for text file ');
 
-  IF ParamCount = 0 THEN BEGIN
+  if ParamCount = 0 then
+  begin
     WriteLn;
     WriteLn; 
     Write('name of text file > ');
     ReadLn(txtName);
-  END ELSE BEGIN
+  end else begin
     txtName := ParamStr(1);
     WriteLn(txtName);
-  END; (* IF *)
+  end; (* IF *)
   WriteLn;
 
   (* --- read text from text file --- *)
@@ -249,11 +242,12 @@ BEGIN (* IndexGen *)
   // StartTimer;
   GetNextWord(w, lnr);
   n := 0;
-  WHILE Length(w) > 0 DO BEGIN
+  while Length(w) > 0 do
+  begin
     Insert(ht, w, IntToStr(lnr));
     n := n + 1;
     GetNextWord(w, lnr);
-  END; (* WHILE *)
+  end; (* WHILE *)
   // StopTimer;
 
   // WriteLn;
@@ -264,4 +258,5 @@ BEGIN (* IndexGen *)
 
   Close(txt);
   ClearHashTable(ht);
-END. (* IndexGen *)
+end.
+(* IndexGen *)

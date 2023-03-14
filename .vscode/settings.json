@@ -6,5 +6,5 @@
     "**/*.ppu": true
   },
   "editor.mouseWheelZoom": true,
-  "editor.formatOnSave": false
+  "editor.formatOnSave": true
 }
