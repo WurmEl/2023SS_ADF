@@ -97,7 +97,7 @@ begin
 end;
 
 var
-  inputStr: string;
+  inputStr: AnsiString;
   L, i, j: integer;
   substr: string;
   uniqueSubstrings: HashTable;
