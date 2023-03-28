@@ -185,6 +185,8 @@ begin
     end;
   SetLength(entries, n);
 
+  Writeln('Found ', n,' uniquie words.');
+
   repeat
     sorted := True;
     for i := 0 to n-2 do
