@@ -7,16 +7,38 @@ program RLE;
 
 uses SysUtils;
 
-const
-  MAX_BUFFER_SIZE = 1024;
+function CompressString(var str: string): string;
+var
+  i, j: integer;
+  currChar: char;
+  ret: string;
 
-type
-  RLEmode = (compress, decompress);
-
-function CompressString(var str: STRING): STRING;
+  procedure UpdateRet;
+  begin
+    if j > 2 then
+      ret := ret + currChar + IntToStr(j)
+    else if j = 2 then
+      ret := ret + currChar + currChar
+    else
+      ret := ret + currChar;
+    j := 1;
+  end;
 begin
-  writeln(str);
-  CompressString := str;
+  ret := '';
+  j := 1;
+  i := 1;
+  currChar := str[i];
+  for i := 2 to Length(str) do
+    if str[i] = currChar then
+      Inc(j)
+    else
+    begin
+      UpdateRet();
+      currChar := str[i];
+    end;
+
+  UpdateRet();
+  CompressString := ret;
 end;
 
 function DecompressString(var str: STRING): STRING;
@@ -29,8 +51,8 @@ procedure CompressFile(const InFileName, OutFileName: string);
 var
   line: STRING;
 begin
-  line := 'compress';
-  CompressString(line);
+  line := 'commmpresss';
+  WriteLn(CompressString(line));
 end;
 
 procedure DecompressFile(InFileName, OutFileName: string);
@@ -44,7 +66,6 @@ end;
 var
   Command: string;
   InFileName, OutFileName: string;
-  mode: RLEmode;
 begin
   if ParamCount > 0 then
     Command := ParamStr(1)
