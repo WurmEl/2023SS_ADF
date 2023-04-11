@@ -7,24 +7,29 @@ program RLE;
 
 uses SysUtils;
 
-function CompressString(var str: string): string;
+type
+  OperationType = (compress, decompress);
+  OutputType = (toFile, toConsole);
+
+function CompressString(str: string): string;
 var
   i, j: integer;
   currChar: char;
-  ret: string;
+  compressed: string;
 
-  procedure UpdateRet;
+  // inner procedure to avoid code duplication because this has to be run inside the loop and after the loop
+  procedure Update;
   begin
     if j > 2 then
-      ret := ret + currChar + IntToStr(j)
+      compressed := Concat(compressed, currChar, IntToStr(j))
     else if j = 2 then
-      ret := ret + currChar + currChar
+      compressed := Concat(compressed, currChar, currChar)
     else
-      ret := ret + currChar;
+      compressed := Concat(compressed, currChar);
     j := 1;
   end;
 begin
-  ret := '';
+  compressed := '';
   j := 1;
   i := 1;
   currChar := str[i];
@@ -33,39 +38,72 @@ begin
       Inc(j)
     else
     begin
-      UpdateRet();
+      Update();
       currChar := str[i];
     end;
 
-  UpdateRet();
-  CompressString := ret;
+  Update();
+  CompressString := compressed;
 end;
 
-function DecompressString(var str: STRING): STRING;
+function DecompressString(str: string): string;
+var
+  i, j: integer;
+  decompressed: string;
 begin
-  writeln(str);
-  DecompressString := str;
+  decompressed := '';
+  i := 1;
+  while i <= Length(str) do
+  begin
+    if (str[i] in ['0'..'9']) then
+    begin
+      if(i = 1) then break;
+      for j := 2 to StrToInt(str[i]) do
+        decompressed := Concat(decompressed, str[i-1]);
+    end else decompressed := Concat(decompressed, str[i]);
+    Inc(i);
+  end;
+
+  DecompressString := decompressed;
 end;
 
-procedure CompressFile(const InFileName, OutFileName: string);
+procedure RunRLE(operation: OperationType; outputType: OutputType; const inFileName: string; const outFileName: string);
 var
   line: STRING;
+  inFile, outFile: TEXT;
 begin
-  line := 'commmpresss';
-  WriteLn(CompressString(line));
-end;
+  Assign(inFile, inFileName);
+  Reset(inFile);
+  if(outputType = toFile) then
+  begin
+    Assign(outFile, outFileName);
+    Rewrite(outFile);
+  end;
 
-procedure DecompressFile(InFileName, OutFileName: string);
-var
-  line: STRING;
-begin
-  line := 'decompress';
-  DecompressString(line);
+  while(not Eof(inFile)) do
+  begin
+    ReadLn(inFile, line);
+    
+    if(operation = compress) then
+      line := CompressString(line)
+    else if(operation = decompress) then
+      line := DecompressString(line);
+    
+    if(outputType = toFile) then
+      writeln(outFile, line)
+    else 
+      writeln(line);
+  end;
+
+  Close(inFile);
+  if(outputType = toFile) then
+    Close(outFile);
 end;
 
 var
   Command: string;
   InFileName, OutFileName: string;
+  outType: OutputType;
 begin
   if ParamCount > 0 then
     Command := ParamStr(1)
@@ -93,13 +131,11 @@ begin
     Halt(1);
   end;
 
+  outType := toFile;
   if ParamCount > 2 then
     OutFileName := ParamStr(3)
-  else begin
-    write('enter outfilename > ');
-    ReadLn(OutFileName);
-  end;
-  if (inFilename = outFilename) then
+  else outType := toConsole;
+  if ((outType = toFile) and (inFilename = outFilename)) then
   begin
     WriteLn('Error: output file can not be the same as input file - ', InFileName);
     writeln;
@@ -107,7 +143,7 @@ begin
   end;
 
   if Command = '-c' then
-    CompressFile(InFileName, OutFileName)
+    RunRLE(compress, outType, InFileName, OutFileName)
   else
-    DecompressFile(InFileName, OutFileName);
+    RunRLE(decompress, outType, InFileName, OutFileName);
 end.
