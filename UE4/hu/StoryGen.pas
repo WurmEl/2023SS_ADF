@@ -1,4 +1,4 @@
-(* StoryGen:                                          Elias Wurm, 2023-04-11 *)
+(* StoryGen:                                          Elias Wurm, 2023-04-12 *)
 (* ------                                                                    *)
 (* transforms stories by replacing specific words                            *)
 (* ========================================================================= *)
@@ -12,42 +12,6 @@ type
     OldWord: string;
     NewWord: string;
   end;
-
-var
-  repls: array of Repl;
-
-// obviously i could have used arrays with a hardcoded size or linkedLists but i couldn't be bothered with it 
-// so i used dynamic arrays even though i know they are not very welcome yet
-procedure readRepls(fileName: string);
-var
-  replFile: TEXT;
-  line: string;
-  words: array of AnsiString;
-begin
-  assign(replFile, fileName);
-  reset(replFile);
-
-  while not eof(replFile) do
-  begin
-    readln(replFile, line);
-
-    words := SplitString(line, ' ');
-    if (not (High(words) = 1)) then
-    begin
-      WriteLn('Error: incorrect format of replacements file');
-      writeln;
-      Halt;
-    end;
-
-    SetLength(repls, Length(repls) + 1);
-
-    repls[Length(repls) - 1].OldWord := words[0];
-    repls[Length(repls) - 1].NewWord := words[1];
-  end;
- 
-  close(replFile);
-end;
-
 
 procedure CheckIfFileExists(fileName: string);
 begin
@@ -83,8 +47,81 @@ begin
 end;
 
 var
-  replsFileName, inFileName, outFileName: string;
+  repls: array of Repl;
+
+procedure readRepls(fileName: string);
+var
+  replFile: TEXT;
+  line: string;
+  words: array of AnsiString;
+begin
+  assign(replFile, fileName);
+  reset(replFile);
+
+  while not eof(replFile) do
+  begin
+    readln(replFile, line);
+
+    words := SplitString(line, ' ');
+    if (not (High(words) = 1)) then
+    begin
+      WriteLn('Error: incorrect format of replacements file');
+      writeln;
+      Halt;
+    end;
+
+    SetLength(repls, Length(repls) + 1);
+
+    repls[Length(repls) - 1].OldWord := words[0];
+    repls[Length(repls) - 1].NewWord := words[1];
+  end;
+ 
+  close(replFile);
+end;
+
+procedure openFiles(var inFile, outFile: TEXT; inFileName, outFileName: string);
+begin
+  Assign(inFile, inFileName);
+  Reset(inFile);
+  Assign(outFile, outFileName);
+  Rewrite(outFile);
+end;
+
+procedure closeFiles(var inFile, outFile: TEXT);
+begin
+  Close(inFile);
+  Close(outFile);
+end;
+
+procedure replaceWords(var line: string);
+var
   i: integer;
+begin
+  for i := 0 to Length(repls) - 1 do
+    // rfReplaceAll: Replace all occurrences of the search string with the replacement string.
+    // rfIgnoreCase: Search case insensitive.
+    line := StringReplace(line, repls[i].OldWord, repls[i].NewWord, [rfReplaceAll, rfIgnoreCase]);
+end;
+
+procedure runReplacements(inFileName, outFileName: string);
+var
+  line: string;
+  inFile, outFile: TEXT;
+begin
+  openFiles(inFile, outFile, inFileName, outFileName);
+
+  while(not Eof(inFile)) do
+  begin
+    ReadLn(inFile, line);
+    replaceWords(line);
+    writeln(outFile, line);
+  end;
+
+  closeFiles(inFile, outFile);
+end;
+
+var
+  replsFileName, inFileName, outFileName: string;
 begin
   replsFileName := GetFilename(1, 'Enter fileName with the replacements');
   CheckIfFileExists(replsFileName);
@@ -98,4 +135,5 @@ begin
   CheckFilenamesIdentical(outFileName, inFileName);
 
   readRepls(replsFileName);
+  runReplacements(inFileName, outFileName);
 end.
