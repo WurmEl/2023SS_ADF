@@ -5,20 +5,13 @@
 
 program StoryGen;
 
-uses SysUtils;
-
-const
-  MAX_REPL_SIZE = 1000;
+uses SysUtils, StrUtils;
 
 type
   Repl = record
     OldWord: string;
     NewWord: string;
   end;
-
-var
-  repls: array[1..MAX_REPL_SIZE] of Repl;
-  replsSize: integer;
 
 procedure CheckIfFileExists(fileName: string);
 begin
@@ -53,43 +46,34 @@ begin
   GetFilename := fileName;
 end;
 
-procedure getReplFromStr(str: string; var repl: Repl);
 var
-  whitespacePos: Integer;
-begin
-  whitespacePos := Pos(' ', str);
-  
-  if(whitespacePos = 0) then
-  begin
-    WriteLn('Error: incorrect format of replacements file');
-    writeln;
-    Halt;
-  end;
-
-  repl.OldWord := Copy(str, 1, whitespacePos - 1);
-  repl.NewWord := Copy(str, whitespacePos + 1, Length(str) - whitespacePos);
-end;
+  repls: array of Repl;
 
 procedure readRepls(fileName: string);
 var
   replFile: TEXT;
   line: string;
-  foundRepl: Repl;
+  words: array of AnsiString;
 begin
   assign(replFile, fileName);
   reset(replFile);
-
-  replsSize := 0;
 
   while not eof(replFile) do
   begin
     readln(replFile, line);
 
-    getReplFromStr(line, foundRepl);
-    Inc(replsSize);
+    words := SplitString(line, ' ');
+    if (not (High(words) = 1)) then
+    begin
+      WriteLn('Error: incorrect format of replacements file');
+      writeln;
+      Halt;
+    end;
 
-    repls[replsSize].OldWord := foundRepl.OldWord;
-    repls[replsSize].NewWord := foundRepl.NewWord;
+    SetLength(repls, Length(repls) + 1);
+
+    repls[Length(repls) - 1].OldWord := words[0];
+    repls[Length(repls) - 1].NewWord := words[1];
   end;
  
   close(replFile);
@@ -111,18 +95,12 @@ end;
 
 procedure replaceWords(var line: string);
 var
-  i, wPos: integer;
+  i: integer;
 begin
-  for i := 1 to (replsSize) do
-  begin
-    wPos := Pos(repls[i].OldWord, line);
-    while(wPos <> 0) do
-    begin
-      Delete(line, wPos, Length(repls[i].OldWord));
-      Insert(repls[i].NewWord, line, wPos);
-      wPos := Pos(repls[i].OldWord, line);
-    end;
-  end;
+  for i := 0 to Length(repls) - 1 do
+    // rfReplaceAll: Replace all occurrences of the search string with the replacement string.
+    // rfIgnoreCase: Search case insensitive.
+    line := StringReplace(line, repls[i].OldWord, repls[i].NewWord, [rfReplaceAll, rfIgnoreCase]);
 end;
 
 procedure runReplacements(inFileName, outFileName: string);
