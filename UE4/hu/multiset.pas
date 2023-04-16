@@ -29,9 +29,12 @@ function Contains(ms: StrMSet; value: STRING): BOOLEAN;
 function Count(ms: StrMSet; value: STRING): INTEGER;
 function Cardinality(ms: StrMSet): INTEGER;
 function CountUnique(ms: StrMSet): INTEGER;
+// helper procedure for easier debugging
+procedure PrintTree(ms: StrMSet);
 
 implementation
 
+// helper functions 
 function NewStrNode(value: string): PstrNode; 
 var
   node: PstrNode;
@@ -112,28 +115,14 @@ begin
     FindStrNode := node;
 end;
 
-function TraverseStrNode(node: PstrNode; uniqueOnly: Boolean): Integer;
-var
-  count: Integer;
+function CountNodeValues(node: PstrNode; uniqueOnly: Boolean): Integer;
 begin
   if node = nil then
-  begin
-    TraverseStrNode := 0;
-    Exit;
-  end;
-
-  count := 0;
-  count := count + TraverseStrNode(node^.left, uniqueOnly);
-  if not uniqueOnly or (node^.count = 1) then
-    Inc(count);
-  count := count + TraverseStrNode(node^.right, uniqueOnly);
-
-  TraverseStrNode := count;
-end;
-
-procedure InitStrMSet(var ms: StrMSet);
-begin
-  ms.root := nil;
+    CountNodeValues := 0
+  else if uniqueOnly then
+    CountNodeValues := 1 + CountNodeValues(node^.left, uniqueOnly) + CountNodeValues(node^.right, uniqueOnly)
+  else
+    CountNodeValues := node^.count + CountNodeValues(node^.left, uniqueOnly) + CountNodeValues(node^.right, uniqueOnly);
 end;
 
 procedure DisposeStrNode(node: PStrNode);
@@ -144,6 +133,30 @@ begin
     DisposeStrNode(node^.right);
     Dispose(node);
   end;
+end;
+
+procedure PrintTreeNodes(root: PstrNode; level: integer);
+var
+  i: integer;
+begin
+  if root = nil then
+    exit;
+  
+  PrintTreeNodes(root^.right, level + 1);
+
+  for i := 1 to level do
+    write('  ');
+
+  writeln(root^.value, ':', root^.count);
+
+  PrintTreeNodes(root^.left, level + 1);
+end;
+
+// helper functions end
+
+procedure InitStrMSet(var ms: StrMSet);
+begin
+  ms.root := nil;
 end;
 
 procedure DisposeStrMSet(var ms: StrMSet);
@@ -186,12 +199,17 @@ end;
 
 function Cardinality(ms: StrMSet): Integer;
 begin
-  Cardinality := TraverseStrNode(ms.root, False);
+  Cardinality := CountNodeValues(ms.root, False);
 end;
 
 function CountUnique(ms: StrMSet): Integer;
 begin
-  CountUnique := TraverseStrNode(ms.root, True);
+  CountUnique := CountNodeValues(ms.root, True);
+end;
+
+procedure PrintTree(ms: StrMSet);
+begin
+  PrintTreeNodes(ms.root, 0);
 end;
 
 end.
