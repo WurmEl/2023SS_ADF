@@ -4,7 +4,6 @@ uses Vector;
 
 var
   v: Vec;
-  i: Integer;
 begin
   // Initialize an empty vector
   InitVector(v);
