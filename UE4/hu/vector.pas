@@ -9,12 +9,9 @@ unit Vector;
 
 interface
 
-const
-  MAX_CAPACITY = MaxInt;
-
 type
   PIntArray = ^IntArray;
-  IntArray = array[0..MAX_CAPACITY] of Integer; // max array size is MaxInt (32767)
+  IntArray = array[0..0] of Integer;
   Vec = record
     data: PIntArray;
     count: Integer;
@@ -31,9 +28,6 @@ function Size(v: Vec): Integer;
 function Capacity(v: Vec): Integer;
 
 implementation
-
-uses
-  SysUtils;
 
 procedure InitVector(var v: Vec);
 begin
@@ -54,19 +48,16 @@ end;
 
 procedure GrowVector(var v: vec);
 var
-  newCapacity: Integer;
+  newCapacity: integer;
   newData: PIntArray;
   i: Integer;
 begin
   newCapacity := v.capacity * 2;
-  if newCapacity > MAX_CAPACITY then
-  begin
-    WriteLn('Error: Capacity exceeds maximum value.');
-    Halt(1);
-  end;
   GetMem(newData, newCapacity * SizeOf(Integer));
+  {$R-}
   for i := 0 to v.count - 1 do
     newData^[i] := v.data^[i];
+  {$R+}
   FreeMem(v.data, v.capacity * SizeOf(Integer));
   v.data := newData;
   v.capacity := newCapacity;
@@ -76,7 +67,9 @@ procedure Add(var v: Vec; val: Integer);
 begin
   if v.count = v.capacity then
     GrowVector(v);
+  {$R-}
   v.data^[v.count] := val;
+  {$R+}
   Inc(v.count);
 end;
 
@@ -87,7 +80,9 @@ begin
     WriteLn('Error: Index out of range.');
     Halt(1);
   end;
+  {$R-}
   v.data^[pos] := val;
+  {$R+}
 end;
 
 function ElementAt(v: Vec; pos: Integer): Integer;
@@ -97,7 +92,9 @@ begin
     WriteLn('Error: Index out of range.');
     Halt(1);
   end;
+  {$R-}
   ElementAt := v.data^[pos];
+  {$R+}
 end;
 
 procedure RemoveElementAt(var v: Vec; pos: Integer);
@@ -109,8 +106,11 @@ begin
     WriteLn('Error: Index out of range.');
     Halt(1);
   end;
+  {$R-}
   for i := pos to v.count - 2 do
     v.data^[i] := v.data^[i + 1];
+  {$R+}
+
   Dec(v.count);
 end;
 

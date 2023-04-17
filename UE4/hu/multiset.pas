@@ -9,16 +9,7 @@ unit Multiset;
 interface
 
 type
-  PstrNode = ^StrNode;
-  StrNode = record
-    value: string;
-    count: integer;
-    left: PstrNode;
-    right: PstrNode;
-  end;
-  StrMSet = record
-    root: PstrNode;
-  end;
+  StrMSet = pointer
 
 procedure InitStrMSet(var ms: StrMSet);
 procedure DisposeStrMSet(var ms: StrMSet);
@@ -33,6 +24,18 @@ function CountUnique(ms: StrMSet): INTEGER;
 procedure PrintTree(ms: StrMSet);
 
 implementation
+
+type
+  PstrNode = ^StrNode;
+  StrNode = record
+    value: string;
+    count: integer;
+    left: PstrNode;
+    right: PstrNode;
+  end;
+  MSet = record
+    root: PstrNode;
+  end;
 
 // helper functions 
 function NewStrNode(value: string): PstrNode; 
