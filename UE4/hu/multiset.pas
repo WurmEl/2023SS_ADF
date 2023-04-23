@@ -9,7 +9,7 @@ unit Multiset;
 interface
 
 type
-  StrMSet = pointer
+  StrMSet = pointer;
 
 procedure InitStrMSet(var ms: StrMSet);
 procedure DisposeStrMSet(var ms: StrMSet);
@@ -33,11 +33,12 @@ type
     left: PstrNode;
     right: PstrNode;
   end;
+  PMSet = ^MSet;
   MSet = record
     root: PstrNode;
   end;
 
-// helper functions 
+//region: helper functions 
 function NewStrNode(value: string): PstrNode; 
 var
   node: PstrNode;
@@ -155,45 +156,73 @@ begin
   PrintTreeNodes(root^.left, level + 1);
 end;
 
-// helper functions end
+//regionEnd helper functions
 
 procedure InitStrMSet(var ms: StrMSet);
+var
+  pms: PMSet;
 begin
-  ms.root := nil;
+  if ms = nil then
+  begin
+    New(pms);
+    pms^.root := nil;
+    ms := pms;
+  end else begin
+    pms := PMSet(ms);
+    pms^.root := nil;
+  end;
 end;
 
 procedure DisposeStrMSet(var ms: StrMSet);
+var
+  pms: PMSet;
 begin
-  if ms.root <> nil then
-    DisposeStrNode(ms.root);
-  ms.root := nil;
+  pms := PMSet(ms);
+  if pms^.root <> nil then
+    DisposeStrNode(pms^.root);
+  pms^.root := nil;
+  Dispose(pms);
 end;
 
 procedure Insert(var ms: StrMSet; value: string);
+var
+  pms: PMSet;
 begin
-  ms.root := InsertStrNode(ms.root, value);
+  pms := PMSet(ms);
+  pms^.root := InsertStrNode(pms^.root, value);
 end;
 
 procedure Remove(var ms: StrMSet; value: string);
+var
+  pms: PMSet;
 begin
-  ms.root := RemoveStrNode(ms.root, value);
+  pms := PMSet(ms);
+  pms^.root := RemoveStrNode(pms^.root, value);
 end;
 
 function IsEmpty(ms: StrMSet): Boolean;
+var
+  pms: PMSet;
 begin
-  IsEmpty := ms.root = nil;
+  pms := PMSet(ms);
+  IsEmpty := pms^.root = nil;
 end;
 
 function Contains(ms: StrMSet; value: STRING): BOOLEAN;
+var
+  pms: PMSet;
 begin
-  Contains := FindStrNode(ms.root, value) <> nil;
+  pms := PMSet(ms);
+  Contains := FindStrNode(pms^.root, value) <> nil;
 end;
 
 function Count(ms: StrMSet; value: STRING): INTEGER;
 var
   node: PStrNode;
+  pms: PMSet;
 begin
-  node := FindStrNode(ms.root, value);
+  pms := PMSet(ms);
+  node := FindStrNode(pms^.root, value);
   if node <> nil then
     Count := node^.count
   else
@@ -201,18 +230,27 @@ begin
 end;
 
 function Cardinality(ms: StrMSet): Integer;
+var
+  pms: PMSet;
 begin
-  Cardinality := CountNodeValues(ms.root, False);
+  pms := PMSet(ms);
+  Cardinality := CountNodeValues(pms^.root, False);
 end;
 
 function CountUnique(ms: StrMSet): Integer;
+var
+  pms: PMSet;
 begin
-  CountUnique := CountNodeValues(ms.root, True);
+  pms := PMSet(ms);
+  CountUnique := CountNodeValues(pms^.root, True);
 end;
 
 procedure PrintTree(ms: StrMSet);
+var
+  pms: PMSet;
 begin
-  PrintTreeNodes(ms.root, 0);
+  pms := PMSet(ms);
+  PrintTreeNodes(pms^.root, 0);
 end;
 
 end.
