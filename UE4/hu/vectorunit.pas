@@ -42,7 +42,7 @@ procedure InitVector(var v: Vector);
 var
   pv: PVector;
 begin
-  pv := PVector(v);
+  new(pv);
   pv^.count := 0;
   pv^.capacity := 1;
   GetMem(pv^.data, pv^.capacity * SizeOf(Integer));
@@ -51,6 +51,7 @@ begin
     WriteLn('Error: Heap overflow.');
     Halt(1);
   end;
+  v := pv;
 end;
 
 procedure DisposeVector(var v: Vector);
@@ -59,6 +60,7 @@ var
 begin
   pv := PVector(v);
   FreeMem(pv^.data, pv^.capacity * SizeOf(Integer));
+  Dispose(v);
 end;
 
 procedure GrowVector(var v: VecRec);

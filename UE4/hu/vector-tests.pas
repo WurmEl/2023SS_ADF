@@ -1,9 +1,9 @@
 program VectorTests;
 
-uses Vector;
+uses VectorUnit;
 
 var
-  v: Vec;
+  v: Vector;
 begin
   // Initialize an empty vector
   InitVector(v);
