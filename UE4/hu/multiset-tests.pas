@@ -8,6 +8,20 @@ begin
   // Initialize an empty multiset
   InitStrMSet(ms);
 
+  Insert(ms, 'd');
+  Insert(ms, 'b');
+  Insert(ms, 'c');
+  Insert(ms, 'a');
+  Insert(ms, 'f');
+  Insert(ms, 'g');
+  Insert(ms, 'e');
+  PrintTree(ms);
+  Remove(ms, 'd');
+  PrintTree(ms);
+
+  DisposeStrMSet(ms);
+  InitStrMSet(ms);
+
   // Test inserting elements
   Insert(ms, 'apple');
   Insert(ms, 'banana');
