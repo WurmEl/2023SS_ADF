@@ -1,8 +1,8 @@
-(* Expression:                                        Elias Wurm, 2023-04-19 *)
+(* Calculator:                                        Elias Wurm, 2023-04-19 *)
 (* ------                                                                    *)
-(* Scanner and Parser for simple artihemtic expressions                      *)
+(* Scanner and Parser for simple artihemtic expressions and calculater       *)
 (* ========================================================================= *)
-program Expression;
+program Calculator;
 const
   eofCh = Chr(0);
 
@@ -68,13 +68,16 @@ end;
 (* Parser *)
 
 procedure S;    forward;
-procedure Expr; forward;
-procedure Term; forward;
-procedure Fact; forward;
+procedure Expr(var e: integer); forward;
+procedure Term(var t: integer); forward;
+procedure Fact(var f: integer); forward;
 
 procedure S;
+var
+  e: integer;
 begin
-  Expr; if not success then exit;
+  Expr(e); if not success then exit;
+  (* sem *) writeln(e); (* end sem *)
   if(sy <> eofSy) then
   begin
     success := false;
@@ -82,50 +85,62 @@ begin
   end;
 end;
 
-procedure Expr;
+procedure Expr(var e: integer);
+var
+  t: integer;
 begin
-  Term; if not success then exit;
+  Term(e); if not success then exit;
   while(sy = plusSy) or (sy = minusSy) do
     case sy of
       plusSy:
       begin
         NewSy;
-        Term; if not success then exit;
+        Term(t); if not success then exit;
+        (* sem *) e := e + t; (* end sem *)
       end;
       minusSy:
       begin 
         NewSy;
-        Term; if not success then exit;
+        Term(t); if not success then exit;
+        (* sem *) e := e - t; (* end sem *)
       end;
     end;
 end;
 
-procedure Term;
+procedure Term(var t: integer);
+var
+  f: integer;
 begin
-  Fact; if not success then exit;
+  Fact(t); if not success then exit;
   while(sy = timesSy) or (sy = divSy) do
     case sy of
       timesSy:
       begin
         NewSy;
-        Fact; if not success then exit;
+        Fact(f); if not success then exit;
+        (* sem *) t := t * f; (* end sem *)
       end;
       divSy:
       begin 
         NewSy;
-        Fact; if not success then exit;
+        Fact(f); if not success then exit;
+        (* sem *) t := t div f; (* end sem *)
       end;
     end;
 end;
 
-procedure Fact;
+procedure Fact(var f: integer);
 begin
   case sy of
-    numberSy: NewSy;
+    numberSy: 
+    begin
+      f := numberVal;
+      NewSy;
+    end;
     leftParSy:
     begin 
       NewSy;
-      Expr; if not success then exit;
+      Expr(f); if not success then exit;
       if(sy <> rightParSy) then
       begin success := false; Exit; end;
       NewSy;

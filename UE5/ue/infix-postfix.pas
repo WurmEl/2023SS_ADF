@@ -1,8 +1,8 @@
-(* Expression:                                        Elias Wurm, 2023-04-19 *)
+(* InfixPostfix:                                      Elias Wurm, 2023-04-26 *)
 (* ------                                                                    *)
-(* Scanner and Parser for simple artihemtic expressions                      *)
+(* Infix Postfix convert for simple arithmetic expressions                   *)
 (* ========================================================================= *)
-program Expression;
+program InfixPostfix;
 const
   eofCh = Chr(0);
 
@@ -75,6 +75,7 @@ procedure Fact; forward;
 procedure S;
 begin
   Expr; if not success then exit;
+  (* sem *) writeln; (* end sem *)
   if(sy <> eofSy) then
   begin
     success := false;
@@ -91,11 +92,13 @@ begin
       begin
         NewSy;
         Term; if not success then exit;
+        (* sem *) write('+ '); (* end sem *)
       end;
       minusSy:
       begin 
         NewSy;
         Term; if not success then exit;
+        (* sem *) write('- '); (* end sem *)
       end;
     end;
 end;
@@ -109,11 +112,13 @@ begin
       begin
         NewSy;
         Fact; if not success then exit;
+        (* sem *) write('* '); (* end sem *)
       end;
       divSy:
       begin 
         NewSy;
         Fact; if not success then exit;
+        (* sem *) write('/ '); (* end sem *)
       end;
     end;
 end;
@@ -121,7 +126,11 @@ end;
 procedure Fact;
 begin
   case sy of
-    numberSy: NewSy;
+    numberSy:
+    begin 
+      (* sem *) write(numberVal, ' '); (* end sem *)
+      NewSy; 
+    end;
     leftParSy:
     begin 
       NewSy;
