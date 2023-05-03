@@ -3,9 +3,9 @@
 (* mini pascal interpreter                                                   *)
 (* ========================================================================= *)
 
-program MPI;
+program MPI_SS;
 uses
-  MPLEX, MPP_S;
+  MPLEX, MPP_SS;
   
 var
   filename: STRING;
@@ -17,10 +17,9 @@ begin (* MPI *)
   InitScanner(filename, ok);
   if (not ok) then
   begin
-    writeln('ERROR: file not found - ', filename);   
+    writeln('ERROR: file not found - ', filename);
     HALT;
   end; (* IF *)
 
   S;
-  if success then writeln('success') else writeln('Syntax error');
 end.

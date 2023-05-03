@@ -1,11 +1,11 @@
-(* MPI:                                               Elias Wurm, 2023-04-26 *)
+(* MPC:                                               Elias Wurm, 2023-05-03 *)
 (* ------                                                                    *)
-(* mini pascal interpreter                                                   *)
+(* mini pascal compiler                                                      *)
 (* ========================================================================= *)
 
-program MPI;
+program MPC;
 uses
-  MPLEX, MPP_S;
+  MPLEX, MPC_SS, CodeDef;
   
 var
   filename: STRING;
@@ -22,5 +22,5 @@ begin (* MPI *)
   end; (* IF *)
 
   S;
-  if success then writeln('success') else writeln('Syntax error');
+  if success then StoreCode(filename + 'o', ca) else writeln('Syntax error');
 end.
