@@ -2,70 +2,81 @@
    -------
    Definition of the MiniPascal byte code.
 ===================================================================*)
-UNIT CodeDef;
+unit CodeDef;
 
 (*$I Chooser.inc*)
 
-INTERFACE
+interface
 
-  CONST
-    maxCodeLen = 100;
+const
+  maxCodeLen = 100;
 
-  TYPE
-    OpCode = (      (*operands:*)
-      LoadConstOpc, (*num  = numerical literal*)
-      LoadValOpc,   (*addr = address of variable for value to load*)
-      LoadAddrOpc,  (*addr = address of variable*)
-      StoreOpc,
-      AddOpc,
-      SubOpc,
-      MulOpc,
-      DivOpc,
-      ReadOpc,      (*addr = address of variable to read*)
-      WriteOpc,
-(*$IFDEF Midi*)
-      JmpOpc,       (*addr = code address to jump to*)
-      JmpZOpc,      (*addr = code address to jump to on zero*)
-(*$ENDIF*)
-      EndOpc);
+type
+  OpCode = (      (*operands:*)
+    LoadConstOpc, (*num  = numerical literal*)
+    LoadValOpc,   (*addr = address of variable for value to load*)
+    LoadAddrOpc,  (*addr = address of variable*)
+    StoreOpc,
+    AddOpc,
+    SubOpc,
+    MulOpc,
+    DivOpc,
+    ReadOpc,      (*addr = address of variable to read*)
+    WriteOpc,
+    (*$IFDEF Midi*)
+    JmpOpc,       (*addr = code address to jump to*)
+    JmpZOpc,      (*addr = code address to jump to on zero*)
+    (*$ENDIF*)
+    EndOpc);
 
-    CodeArray = ARRAY [1 .. maxCodeLen] OF BYTE;
+  NodePtr = ^Node;
+  Node = record
+    left, right: NodePtr;
+    val: string;
+    valInt: integer;
+    isOperator: boolean;
+    isIdent: boolean;
+  end;
+  ExprTreePtr = NodePtr;
+
+  CodeArray = array [1 .. maxCodeLen] of BYTE;
 
 
-  PROCEDURE StoreCode(fileName: STRING; ca: CodeArray);
-  PROCEDURE LoadCode(fileName: STRING; VAR ca: CodeArray; VAR ok: BOOLEAN);
+procedure StoreCode(fileName: STRING; ca: CodeArray);
+procedure LoadCode(fileName: STRING; var ca: CodeArray; var ok: BOOLEAN);
 
 
-IMPLEMENTATION
+implementation
 
 
-  PROCEDURE StoreCode(fileName: STRING; ca: CodeArray);
+procedure StoreCode(fileName: STRING; ca: CodeArray);
 (*-----------------------------------------------------------------*)
-    VAR
-      f: FILE OF CodeArray;
-  BEGIN
-    Assign(f, fileName);
-    ReWrite(f);
-    Write(f, ca);
-    Close(f);
-  END; (*StoreCode*)
+var
+  f: file of CodeArray;
+begin
+  Assign(f, fileName);
+  ReWrite(f);
+  Write(f, ca);
+  Close(f);
+end; (*StoreCode*)
 
 
-  PROCEDURE LoadCode(fileName: STRING; VAR ca: CodeArray; VAR ok: BOOLEAN);
+procedure LoadCode(fileName: STRING; var ca: CodeArray; var ok: BOOLEAN);
 (*-----------------------------------------------------------------*)
-    VAR
-      f: FILE OF CodeArray;
-  BEGIN
-    Assign(f, fileName);
-    (*$I-*)
-    Reset(f);
-    (*$I+*)
-    ok := IOResult = 0;
-    IF NOT ok THEN
-      Exit;
-    Read(f, ca);
-    Close(f);
-  END; (*LoadCode*)
+var
+  f: file of CodeArray;
+begin
+  Assign(f, fileName);
+  (*$I-*)
+  Reset(f);
+  (*$I+*)
+  ok := IOResult = 0;
+  if not ok then
+    Exit;
+  Read(f, ca);
+  Close(f);
+end; (*LoadCode*)
 
 
-END. (*CodeDef*)
+end.
+(*CodeDef*)

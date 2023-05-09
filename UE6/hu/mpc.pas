@@ -5,14 +5,14 @@
 
 program MPC;
 uses
-  MPLEX, MPC_SS, CodeDef, CodeGen, CodeInt, CodeDis;
+  MPLEX, MPC_SS, CodeDef, CodeGen, CodeInt;
   
 var
-  filename: STRING;
-  ok: BOOLEAN;
+  filename: string;
+  ok: boolean;
   
-begin (* MPI *)
-  Write('MiniPascal source file > ');
+begin
+  write('MiniPascal source file > ');
   ReadLn(filename);
 
   InitScanner(filename, ok);
@@ -20,7 +20,7 @@ begin (* MPI *)
   begin
     WriteLn('ERROR: Cannot open file ', filename);
     Halt;
-  end; (* IF *)
+  end;
 
   S;
   if (success) then
@@ -29,8 +29,6 @@ begin (* MPI *)
     WriteLn;
 
     InterpretCode(ca);
-    WriteLn;
-    DisassembleCode(ca);
     WriteLn;
   end;
 end.

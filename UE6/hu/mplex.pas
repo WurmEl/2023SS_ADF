@@ -16,6 +16,7 @@ type
     leftParSy, rightParSy, 
     programSy,
     varSy, integerSy,
+    ifSy, elseSy, thenSy, whileSy, doSy,
     readSy, writeSy,
     beginSy, endSy
     );
@@ -145,6 +146,16 @@ begin
           sy := endSy
         else if(identStr = 'INTEGER') then 
           sy := integerSy
+        else if(identStr = 'IF') then 
+          sy := ifSy
+        else if(identStr = 'ELSE') then 
+          sy := elseSy
+        else if(identStr = 'THEN') then 
+          sy := thenSy
+        else if(identStr = 'WHILE') then 
+          sy := whileSy
+        else if(identStr = 'DO') then 
+          sy := doSy
         else sy := identSy;
       end;
 
