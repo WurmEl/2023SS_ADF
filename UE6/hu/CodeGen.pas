@@ -117,9 +117,28 @@ begin
   end;
 end;
 
-procedure OptimizeExprTree(var t: ExprTreePtr);
+procedure ReplaceWithLeftNode(var t: ExprTreePtr);
 var
   dummy: NodePtr;
+begin
+  dummy := t^.left;
+  Dispose(t^.right);
+  Dispose(t);
+  t := dummy;
+end;
+
+procedure ReplaceWithRightNode(var t: ExprTreePtr);
+var
+  dummy: NodePtr;
+begin
+  dummy := t^.right;
+  Dispose(t^.left);
+  Dispose(t);
+  t := dummy;
+end;
+
+
+procedure OptimizeExprTree(var t: ExprTreePtr);
 begin
   if(t = nil) then Exit;
 
@@ -139,10 +158,7 @@ begin
       t^.left^.valInt := t^.left^.valInt * t^.right^.valInt
     else if (t^.val = '/') then 
       t^.left^.valInt := t^.left^.valInt div t^.right^.valInt;
-    dummy := t^.left;
-    Dispose(t^.right);
-    Dispose(t);
-    t := dummy;
+    ReplaceWithLeftNode(t);
   end
   // try to optimize add and sub expressions
   else if(t^.val = '+') or (t^.val = '-') then
@@ -152,25 +168,32 @@ begin
     begin
       if (t^.val = '-') then 
         // if our expr is 0 - a we want to invert a so we get -a 
+        // redundant because compiler can’t handle signed int anyway
         t^.right^.valInt := t^.right^.valInt * -1; 
-      t := t^.right;
+      ReplaceWithRightNode(t);
     end else 
     if not t^.right^.isOperator and not t^.right^.isIdent 
-      and (t^.right^.valInt = 0) then 
-      t := t^.left;
+      and (t^.right^.valInt = 0) then
+      ReplaceWithLeftNode(t);
   end 
   // try to optimize mul and div expressions
   else if(t^.val = '*') or (t^.val = '/') then
-    if (t^.val = '*') and not t^.left^.isOperator 
-      and not t^.left^.isIdent and (t^.left^.valInt = 1) then 
-      t := t^.right 
-    else if not t^.right^.isOperator and not t^.right^.isIdent then
+    if (t^.val = '*') and not t^.left^.isOperator and not t^.left^.isIdent then
+    begin
+      if (t^.left^.valInt = 0) then
+        ReplaceWithLeftNode(t)
+      else if (t^.left^.valInt = 1) then
+        ReplaceWithRightNode(t); 
+    end else if not t^.right^.isOperator and not t^.right^.isIdent then
       if (t^.val = '/') and (t^.right^.valInt = 0) then
       begin 
         WriteLn('*** Error: div. by zero'); 
         HALT; 
       end else 
-      if (t^.right^.valInt = 1) then t := t^.left;
+      if (t^.val = '*') and (t^.right^.valInt = 0) then
+        ReplaceWithRightNode(t) else 
+      if (t^.right^.valInt = 1) then
+        ReplaceWithLeftNode(t);
 end;
 
 procedure RecursiveEmit(t: ExprTreePtr);

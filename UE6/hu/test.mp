@@ -1,8 +1,11 @@
 PROGRAM TEST;
   VAR
-    x: INTEGER;
+    x,y: INTEGER;
 BEGIN
-  x := (20+10) / (2 * 5);
+  read(y);
+
+  x := (y+0)*(3*1+0);
+  x := x * 0;
 
   write(x);
 END.
