@@ -11,7 +11,7 @@ begin
   picture^.addShape(NewCircle(dc, 0, 0, 30));
   picture^.addShape(NewCircle(dc, 0, 0, 20));
 
-  shape := picture^.clone;
+  shape := picture^.clone; 
 
   picture^.draw;
   shape^.draw;
